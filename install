@@ -1,0 +1,77 @@
+#!/bin/bash
+
+read -p "Do you want to start the installation process? (y/n): " choice
+case "$choice" in
+  [yY][eE][sS]|[yY])
+    ;;
+  *)
+    echo "Operation canceled."
+    exit 1
+    ;;
+esac
+
+apt-get clean
+apt-get update >/dev/null 2>&1
+apt-get -y --with-new-pkgs -o Dpkg::Options::="--force-confdef" upgrade >/dev/null 2>&1
+pkg install x11-repo -y &>/dev/null
+pkg install pulseaudio -y &>/dev/null
+pkg install xwayland -y &>/dev/null
+pkg install wget -y &>/dev/null
+pkg install tsu -y &>/dev/null
+pkg install root-repo -y &>/dev/null
+pkg install patchelf -y &>/dev/null
+pkg install p7zip -y &>/dev/null
+pkg install xorg-xrandr -y &>/dev/null
+pkg install ncurses-utils -y &>/dev/null
+pkg install hashdeep -y &>/dev/null
+pkg install termux-x11-nightly -y &>/dev/null
+
+if [ -d "$PREFIX/glibc" ]; then
+    read -p "GLibc installation found. Do you want to remove it? (y/n): " glibc_choice
+    case "$glibc_choice" in
+      [yY][eE][sS]|[yY])
+        rm -rf "$PREFIX/glibc"
+        ;;
+      *)
+        ;;
+    esac
+fi
+
+REPO_URL="https://github.com/shephard-dev/Emulator/releases/download/assets"
+
+FILES=(
+    "box64-binaries.tar.xz"
+    "dxvk.tar.xz"
+    "en-ru-locate.tar.xz"
+    "glibc-prefix.tar.xz"
+    "libudev.tar.xz"
+    "prefix-apps.tar.xz"
+    "scripts.tar.xz"
+    "virgl-mesa.tar.xz"
+    "wine-9.3-vanilla-wow64.tar.xz"
+)
+
+TEMP_DIR="$PREFIX/glibc/opt/package-manager/temp"
+
+for file in "${FILES[@]}"; do
+    pkg="${file%.tar.xz}"
+    mkdir -p "$TEMP_DIR/$pkg"
+    wget -q --show-progress "${REPO_URL}/${file}" -O "$TEMP_DIR/$file"
+    if [ -f "$TEMP_DIR/$file" ]; then
+        tar -xf "$TEMP_DIR/$file" -C "$TEMP_DIR/$pkg" 2>/dev/null
+        if [ -d "$TEMP_DIR/$pkg/glibc" ]; then
+            cp -rf "$TEMP_DIR/$pkg/glibc" "$PREFIX" 2>/dev/null
+        fi
+        rm -rf "$TEMP_DIR/$pkg" "$TEMP_DIR/$file"
+    fi
+done
+
+rm -rf "$TEMP_DIR"
+
+if [ -d "$PREFIX/glibc/opt/scripts" ]; then
+    chmod +x "$PREFIX/glibc/opt/scripts/"*
+    if [ -f "$PREFIX/glibc/opt/scripts/testemu64" ]; then
+        ln -sf "$PREFIX/glibc/opt/scripts/testemu64" "$PREFIX/bin/testemu64"
+    fi
+    echo "To start - type \"testemu64\""
+fi
