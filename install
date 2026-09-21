@@ -1,79 +1,67 @@
 #!/bin/bash
 
-pkg update -y
-pkg upgrade -y
-pkg install -y x11-repo
-pkg install -y tur-repo
+# Обновляем репозитории и добавляем необходимые
+pkg update -y && pkg upgrade -y
+pkg install -y x11-repo tur-repo
 
-pkg install -y fontconfig
-pkg install -y freetype
-pkg install -y git
-pkg install -y gnutls
-pkg install -y libandroid-shmem-static
-pkg install -y libx11
-pkg install -y xorgproto
-pkg install -y libdrm
-pkg install -y libpixman
-pkg install -y libjpeg-turbo
-pkg install -y libgmp
-pkg install -y libgnutls
-pkg install -y mesa-demos
-pkg install -y osmesa
-pkg install -y pulseaudio
-pkg install -y termux-x11-nightly
-pkg install -y vulkan-tools
-pkg install -y xtrans
-pkg install -y libxxf86vm
-pkg install -y xorg-xrandr
-pkg install -y xorg-font-util
-pkg install -y xorg-util-macros
-pkg install -y libxfont2
-pkg install -y libxkbfile
-pkg install -y libpciaccess
-pkg install -y xcb-util-renderutil
-pkg install -y xcb-util-image
-pkg install -y xcb-util-keysyms
-pkg install -y xcb-util-wm
-pkg install -y xorg-xkbcomp
-pkg install -y xkeyboard-config
-pkg install -y libxdamage
-pkg install -y libxinerama
-pkg install -y libxshmfence
-pkg install -y libandroid-spawn
-pkg install -y libxcb
-pkg install -y libxcomposite
-pkg install -y libxcursor
-pkg install -y libxfixes
-pkg install -y libxrender
+# Ставим все зависимости (убран дубль gnutls)
+pkg install -y fontconfig freetype git gnutls libandroid-shmem-static \
+libx11 xorgproto libdrm libpixman libjpeg-turbo libgmp mesa-demos \
+osmesa pulseaudio termux-x11-nightly vulkan-tools xtrans libxxf86vm \
+xorg-xrandr xorg-font-util xorg-util-macros libxfont2 libxkbfile \
+libpciaccess xcb-util-renderutil xcb-util-image xcb-util-keysyms \
+xcb-util-wm xorg-xkbcomp xkeyboard-config libxdamage libxinerama \
+libxshmfence libandroid-spawn libxcb libxcomposite libxcursor \
+libxfixes libxrender vulkan-loader-android mesa-zink \
+mesa-vulkan-icd-freedreno mesa wget tar -y
 
-pkg install -y vulkan-loader-android
-pkg install -y mesa-zink
-pkg install -y mesa-vulkan-icd-freedreno
-pkg install -y mesa
-pkg install -y wget
-
+# Запрашиваем доступ к памяти
 termux-setup-storage
 
-wget https://github.com/alexvorxx/hangover-termux/releases/download/9.22-v1/wine_hangover_9.22_bionic_build_patched.tar.xz
+# Скачиваем сборку Hangover Wine в отдельную директорию для порядка
+echo "Downloading Wine Hangover..."
+mkdir -y wine_hangover
+wget https://github.com/alexvorxx/hangover-termux/releases/download/9.22/wine_hangover_9.22_bionic_build_patched.tar.xz
 
-tar -xvf wine_hangover_9.22_bionic_build_patched.tar.xz
+echo "Extracting archive..."
+# Распаковываем содержимое прямо в созданную папку, обрезая первый уровень вложенности, если он есть
+tar -xvf wine_hangover_9.22_bionic_build_patched.tar.xz -C ./wine_hangover --strip-components=1
+rm wine_hangover_9.22_bionic_build_patched.tar.xz
 
+# Создаем скрипт запуска
 cat << 'EOF' > start.sh
 #!/bin/bash
 echo "Starting YebanOS..."
 sleep 1
 
-export LD_LIBRARY_PATH=$PREFIX/lib
-termux-x11 :0 &>/dev/null &
-sleep 2
+# Убиваем старые процессы, если они зависли в фоне
+killall -9 termux-x11 pulseaudio wine explorer.exe &>/dev/null
+sleep 0.5
 
+# Запуск звукового сервера PulseAudio для Android
+pulseaudio --start --exit-idle-time=-1
+pacmd load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1
+
+# Переменные окружения
+export LD_LIBRARY_PATH=$PREFIX/lib
 export DISPLAY=:0
+export PULSE_SERVER=127.0.0.1
 export GALLIUM_DRIVER=zink
 export MESA_LOADER_DRIVER_OVERRIDE=zink
 export WINEESYNC_TERMUX=1
 export WINEESYNC=1
 
-~/wine_hangover/arm64-v8a/bin/wine explorer /desktop=shell explorer
+# Запуск Termux-X11
+termux-x11 :0 &>/dev/null &
+sleep 2
+
+# Запуск Wine (путь скорректирован относительно папки wine_hangover)
+if [ -f "$HOME/wine_hangover/arm64-v8a/bin/wine" ]; then
+    $HOME/wine_hangover/arm64-v8a/bin/wine explorer /desktop=shell explorer
+else
+    echo "Ошибка: исполняемый файл Wine не найден! Проверьте структуру папки ~/wine_hangover"
+fi
 EOF
 
 chmod +x start.sh
+echo "Setup finished! Run YebanOS with: ./start.sh"
