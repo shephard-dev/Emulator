@@ -1,77 +1,79 @@
 #!/bin/bash
 
-read -p "Do you want to start the installation process? (y/n): " choice
-case "$choice" in
-  [yY][eE][sS]|[yY])
-    ;;
-  *)
-    echo "Operation canceled."
-    exit 1
-    ;;
-esac
+pkg update -y
+pkg upgrade -y
+pkg install -y x11-repo
+pkg install -y tur-repo
 
-apt-get clean
-apt-get update >/dev/null 2>&1
-apt-get -y --with-new-pkgs -o Dpkg::Options::="--force-confdef" upgrade >/dev/null 2>&1
-pkg install x11-repo -y &>/dev/null
-pkg install pulseaudio -y &>/dev/null
-pkg install xwayland -y &>/dev/null
-pkg install wget -y &>/dev/null
-pkg install tsu -y &>/dev/null
-pkg install root-repo -y &>/dev/null
-pkg install patchelf -y &>/dev/null
-pkg install p7zip -y &>/dev/null
-pkg install xorg-xrandr -y &>/dev/null
-pkg install ncurses-utils -y &>/dev/null
-pkg install hashdeep -y &>/dev/null
-pkg install termux-x11-nightly -y &>/dev/null
+pkg install -y fontconfig
+pkg install -y freetype
+pkg install -y git
+pkg install -y gnutls
+pkg install -y libandroid-shmem-static
+pkg install -y libx11
+pkg install -y xorgproto
+pkg install -y libdrm
+pkg install -y libpixman
+pkg install -y libjpeg-turbo
+pkg install -y libgmp
+pkg install -y libgnutls
+pkg install -y mesa-demos
+pkg install -y osmesa
+pkg install -y pulseaudio
+pkg install -y termux-x11-nightly
+pkg install -y vulkan-tools
+pkg install -y xtrans
+pkg install -y libxxf86vm
+pkg install -y xorg-xrandr
+pkg install -y xorg-font-util
+pkg install -y xorg-util-macros
+pkg install -y libxfont2
+pkg install -y libxkbfile
+pkg install -y libpciaccess
+pkg install -y xcb-util-renderutil
+pkg install -y xcb-util-image
+pkg install -y xcb-util-keysyms
+pkg install -y xcb-util-wm
+pkg install -y xorg-xkbcomp
+pkg install -y xkeyboard-config
+pkg install -y libxdamage
+pkg install -y libxinerama
+pkg install -y libxshmfence
+pkg install -y libandroid-spawn
+pkg install -y libxcb
+pkg install -y libxcomposite
+pkg install -y libxcursor
+pkg install -y libxfixes
+pkg install -y libxrender
 
-if [ -d "$PREFIX/glibc" ]; then
-    read -p "GLibc installation found. Do you want to remove it? (y/n): " glibc_choice
-    case "$glibc_choice" in
-      [yY][eE][sS]|[yY])
-        rm -rf "$PREFIX/glibc"
-        ;;
-      *)
-        ;;
-    esac
-fi
+pkg install -y vulkan-loader-android
+pkg install -y mesa-zink
+pkg install -y mesa-vulkan-icd-freedreno
+pkg install -y mesa
+pkg install -y wget
 
-REPO_URL="https://github.com/shephard-dev/Emulator/releases/download/assets"
+termux-setup-storage
 
-FILES=(
-    "box64-binaries.tar.xz"
-    "dxvk.tar.xz"
-    "en-ru-locate.tar.xz"
-    "glibc-prefix.tar.xz"
-    "libudev.tar.xz"
-    "prefix-apps.tar.xz"
-    "scripts.tar.xz"
-    "virgl-mesa.tar.xz"
-    "wine-9.3-vanilla-wow64.tar.xz"
-)
+wget https://github.com/alexvorxx/hangover-termux/releases/download/9.22-v1/wine_hangover_9.22_bionic_build_patched.tar.xz
 
-TEMP_DIR="$PREFIX/glibc/opt/package-manager/temp"
+tar -xvf wine_hangover_9.22_bionic_build_patched.tar.xz
 
-for file in "${FILES[@]}"; do
-    pkg="${file%.tar.xz}"
-    mkdir -p "$TEMP_DIR/$pkg"
-    wget -q --show-progress "${REPO_URL}/${file}" -O "$TEMP_DIR/$file"
-    if [ -f "$TEMP_DIR/$file" ]; then
-        tar -xf "$TEMP_DIR/$file" -C "$TEMP_DIR/$pkg" 2>/dev/null
-        if [ -d "$TEMP_DIR/$pkg/glibc" ]; then
-            cp -rf "$TEMP_DIR/$pkg/glibc" "$PREFIX" 2>/dev/null
-        fi
-        rm -rf "$TEMP_DIR/$pkg" "$TEMP_DIR/$file"
-    fi
-done
+cat << 'EOF' > start.sh
+#!/bin/bash
+echo "Starting YebanOS..."
+sleep 1
 
-rm -rf "$TEMP_DIR"
+export LD_LIBRARY_PATH=$PREFIX/lib
+termux-x11 :0 &>/dev/null &
+sleep 2
 
-if [ -d "$PREFIX/glibc/opt/scripts" ]; then
-    chmod +x "$PREFIX/glibc/opt/scripts/"*
-    if [ -f "$PREFIX/glibc/opt/scripts/testemu64" ]; then
-        ln -sf "$PREFIX/glibc/opt/scripts/testemu64" "$PREFIX/bin/testemu64"
-    fi
-    echo "To start - type \"testemu64\""
-fi
+export DISPLAY=:0
+export GALLIUM_DRIVER=zink
+export MESA_LOADER_DRIVER_OVERRIDE=zink
+export WINEESYNC_TERMUX=1
+export WINEESYNC=1
+
+~/wine_hangover/arm64-v8a/bin/wine explorer /desktop=shell explorer
+EOF
+
+chmod +x start.sh
