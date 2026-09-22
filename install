@@ -1,67 +1,38 @@
 #!/bin/bash
 
-# Обновляем репозитории и добавляем необходимые
-pkg update -y && pkg upgrade -y
-pkg install -y x11-repo tur-repo
+# Обновление и установка базовых пакетов
+pkg update -y
+pkg install x11-repo -y
+pkg install termux-x11-nightly -y
+pkg install pulseaudio -y
+pkg install wget -y
+# Установка XFCE4 окружения
+pkg install xfce4 -y
 
-# Ставим все зависимости (убран дубль gnutls)
-pkg install -y fontconfig freetype git gnutls libandroid-shmem-static \
-libx11 xorgproto libdrm libpixman libjpeg-turbo libgmp mesa-demos \
-osmesa pulseaudio termux-x11-nightly vulkan-tools xtrans libxxf86vm \
-xorg-xrandr xorg-font-util xorg-util-macros libxfont2 libxkbfile \
-libpciaccess xcb-util-renderutil xcb-util-image xcb-util-keysyms \
-xcb-util-wm xorg-xkbcomp xkeyboard-config libxdamage libxinerama \
-libxshmfence libandroid-spawn libxcb libxcomposite libxcursor \
-libxfixes libxrender vulkan-loader-android mesa-zink \
-mesa-vulkan-icd-freedreno mesa wget tar -y
+# Установка Chromium (опционально)
+pkg install tur-repo
+pkg install chromium
 
-# Запрашиваем доступ к памяти
-termux-setup-storage
+# Установка VS Code (опционально)
+pkg install code-oss
 
-# Скачиваем сборку Hangover Wine в отдельную директорию для порядка
-echo "Downloading Wine Hangover..."
-mkdir -y wine_hangover
-wget https://github.com/alexvorxx/hangover-termux/releases/download/9.22/wine_hangover_9.22_bionic_build_patched.tar.xz
+# Скачивание скрипта запуска XFCE4
+wget https://raw.githubusercontent.com/LinuxDroidMaster/Termux-Desktops/main/scripts/termux_native/startxfce4_termux.sh
+chmod +x startxfce4_termux.sh
 
-echo "Extracting archive..."
-# Распаковываем содержимое прямо в созданную папку, обрезая первый уровень вложенности, если он есть
-tar -xvf wine_hangover_9.22_bionic_build_patched.tar.xz -C ./wine_hangover --strip-components=1
-rm wine_hangover_9.22_bionic_build_patched.tar.xz
+# Скачивание и установка Mobox launcher скрипта
+cd ~
+wget https://raw.githubusercontent.com/LinuxDroidMaster/Termux-Desktops/main/scripts/termux_native/mobox_run.sh
+mv mobox_run.sh boxwine
+chmod +x boxwine
 
-# Создаем скрипт запуска
-cat << 'EOF' > start.sh
-#!/bin/bash
-echo "Starting YebanOS..."
-sleep 1
+# Скачивание ярлыка для рабочего стола
+mkdir -p ~/Desktop
+cd ~/Desktop
+wget https://raw.githubusercontent.com/LinuxDroidMaster/Termux-Desktops/main/scripts/termux_native/MoboxExplorer.desktop
+cd ~
 
-# Убиваем старые процессы, если они зависли в фоне
-killall -9 termux-x11 pulseaudio wine explorer.exe &>/dev/null
-sleep 0.5
-
-# Запуск звукового сервера PulseAudio для Android
-pulseaudio --start --exit-idle-time=-1
-pacmd load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1
-
-# Переменные окружения
-export LD_LIBRARY_PATH=$PREFIX/lib
-export DISPLAY=:0
-export PULSE_SERVER=127.0.0.1
-export GALLIUM_DRIVER=zink
-export MESA_LOADER_DRIVER_OVERRIDE=zink
-export WINEESYNC_TERMUX=1
-export WINEESYNC=1
-
-# Запуск Termux-X11
-termux-x11 :0 &>/dev/null &
-sleep 2
-
-# Запуск Wine (путь скорректирован относительно папки wine_hangover)
-if [ -f "$HOME/wine_hangover/arm64-v8a/bin/wine" ]; then
-    $HOME/wine_hangover/arm64-v8a/bin/wine explorer /desktop=shell explorer
-else
-    echo "Ошибка: исполняемый файл Wine не найден! Проверьте структуру папки ~/wine_hangover"
-fi
-EOF
-
-chmod +x start.sh
-echo "Setup finished! Run YebanOS with: ./start.sh"
+echo
+echo "Установка завершена!"
+echo "Запуск XFCE4: ./startxfce4_termux.sh"
+echo "Запуск Wine Explorer: ./boxwine explorer"
