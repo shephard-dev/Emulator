@@ -1,4 +1,4 @@
-#!/bin/bash
+##!/bin/bash
 
 termux-setup-storage
 
@@ -52,7 +52,7 @@ wget -O "task manager.desktop" "https://raw.githubusercontent.com/shephard-dev/E
 echo "Downloading and extracting glibc..."
 cd "$PREFIX"
 
-wget -O glibc.tar.xz "https://github.com/shephard-dev/Emulator/releases/download/Files/glibc.tar.xz"
+wget -O glibc.tar.xz "https://github.com/shephard-dev/Emulator/releases/download/assets/glibc.tar.xz"
 tar -xf glibc.tar.xz
 rm glibc.tar.xz
 
