@@ -1,4 +1,4 @@
-##!/bin/bash
+#!/bin/bash
 
 termux-setup-storage
 
@@ -41,20 +41,25 @@ pkg install xfce4-screenshooter -y
 pkg install xfce4-taskmanager -y
 pkg install xfce4-docklike-plugin -y
 pkg install matchbox-keyboard -y
+pkg install termux-x11-nightly -y
 
-echo "Setting up Desktop folder and downloading shortcuts..."
+if [ ! -d "$PREFIX/glibc" ]; then
+    echo "Downloading and extracting glibc..."
+    cd "$PREFIX"
+    wget -O glibc.tar.xz "https://github.com/shephard-dev/Emulator/releases/download/assets/glibc.tar.xz"
+    tar -xf glibc.tar.xz
+    rm glibc.tar.xz
+fi
+
+mkdir -p "$PREFIX/Downloads"
+cd "$PREFIX/Downloads"
+wget https://raw.githubusercontent.com/LinuxDroidMaster/Termux-Desktops/main/scripts/termux_native/mobox_run.sh
+chmod +x mobox_run.sh
+
 mkdir -p ~/Desktop
 cd ~/Desktop
-
-wget -O "wine explorer.desktop" "https://raw.githubusercontent.com/shephard-dev/Emulator/main/apps/wine%20explorer.desktop"
-wget -O "task manager.desktop" "https://raw.githubusercontent.com/shephard-dev/Emulator/main/apps/task%20manager.desktop"
-
-echo "Downloading and extracting glibc..."
-cd "$PREFIX"
-
-wget -O glibc.tar.xz "https://github.com/shephard-dev/Emulator/releases/download/assets/glibc.tar.xz"
-tar -xf glibc.tar.xz
-rm glibc.tar.xz
+wget https://raw.githubusercontent.com/LinuxDroidMaster/Termux-Desktops/main/scripts/termux_native/MoboxExplorer.desktop
+cd ~
 
 chmod +x "$PREFIX/glibc/opt/scripts/yebanos"
 ln -sf "$PREFIX/glibc/opt/scripts/yebanos" "$PREFIX/bin/yebanos"
