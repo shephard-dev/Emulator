@@ -55,8 +55,8 @@ if [ ! -d "$PREFIX/glibc" ]; then
     rm glibc.tar.xz
 fi
 
-mkdir -p Downloads
-cd Downloads
+mkdir -p ~/Downloads
+cd ~/Downloads
 wget https://raw.githubusercontent.com/LinuxDroidMaster/Termux-Desktops/main/scripts/termux_native/mobox_run.sh
 chmod +x mobox_run.sh
 
